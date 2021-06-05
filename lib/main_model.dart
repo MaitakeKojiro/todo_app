@@ -7,7 +7,8 @@ class MainModel extends ChangeNotifier {
   String newTodoText = '';
 
   Future getTodoList() async {
-    final snapshot = await FirebaseFirestore.instance.collection('todoList').get();
+    final snapshot =
+        await FirebaseFirestore.instance.collection('todoList').get();
     final docs = snapshot.docs;
     final todoList = docs.map((doc) => Todo(doc)).toList();
     this.todoList = todoList;
@@ -15,20 +16,42 @@ class MainModel extends ChangeNotifier {
   }
 
   void getTodoListRealtime() {
-    final snapshots = FirebaseFirestore.instance.collection('todoList').snapshots();
+    final snapshots =
+        FirebaseFirestore.instance.collection('todoList').snapshots();
     snapshots.listen((snapshot) {
       final docs = snapshot.docs;
       final todoList = docs.map((doc) => Todo(doc)).toList();
-      todoList.sort((a, b)=> b.createdAt.compareTo(a.createdAt));
+      todoList.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       this.todoList = todoList;
       notifyListeners();
     });
   }
+
   Future add() async {
     final collection = FirebaseFirestore.instance.collection('todoList');
     await collection.add({
-      'title':newTodoText,
+      'title': newTodoText,
       'createdAt': Timestamp.now(),
     });
+  }
+
+  void reload() {
+    notifyListeners();
+  }
+
+  Future deleteCheckedItems() async {
+    final checkedItems = todoList.where((todo) => todo.isDone).toList();
+    final references = checkedItems.map((todo) => todo.documentReference);
+    WriteBatch batch = FirebaseFirestore.instance.batch();
+
+    references.forEach((reference) {
+      batch.delete(reference);
+    });
+    return batch.commit();
+  }
+
+  bool checkShouldActiceCompleteButton() {
+    final checkedItems = todoList.where((todo) => todo.isDone).toList();
+    return checkedItems.length > 0;
   }
 }

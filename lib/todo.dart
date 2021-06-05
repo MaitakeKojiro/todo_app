@@ -11,5 +11,6 @@ class Todo {
 
   String title;
   DateTime createdAt;
+  bool isDone = false;
   DocumentReference documentReference;
 }
